@@ -1,18 +1,3 @@
-<!-- Lightbox -->
-<div class="lb" id="lb" aria-hidden="true">
-    <div class="lbCard" role="dialog" aria-label="Pregled slike">
-        <div class="lbBar">
-            <div class="lbTag" id="lbCap">Screenshot</div>
-            <div class="lbBtns">
-                <button class="lbBtn" id="lbPrev" title="Prethodna">←</button>
-                <button class="lbBtn" id="lbNext" title="Sljedeća">→</button>
-                <button class="lbBtn" id="lbClose" title="Zatvori">✕</button>
-            </div>
-        </div>
-        <img class="lbImg" id="lbImg" src="" alt="" />
-    </div>
-</div>
-
 <script>
   (function(){
     const supportsWebp = (() => {
@@ -26,6 +11,7 @@
     })();
 
     const shots = Array.from(document.querySelectorAll('.shot'));
+    const singleShots = Array.from(document.querySelectorAll('.single-shot'));
     const lb = document.getElementById('lb');
     const lbImg = document.getElementById('lbImg');
     const lbCap = document.getElementById('lbCap');
@@ -34,27 +20,64 @@
     const btnNext = document.getElementById('lbNext');
 
     let idx = 0;
+    let singleMode = false;
+
+    function setNavVisible(visible) {
+      btnPrev.style.display = visible ? '' : 'none';
+      btnNext.style.display = visible ? '' : 'none';
+    }
+
+    function openSingle(el) {
+      singleMode = true;
+      lbImg.src = (supportsWebp && el.dataset.srcWebp) ? el.dataset.srcWebp : el.dataset.src;
+      lbImg.alt = el.dataset.cap || 'Slika';
+      lbCap.textContent = el.dataset.cap || 'Slika';
+      setNavVisible(false);
+      lb.classList.add('open');
+      lb.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
 
     function openAt(i){
+      singleMode = false;
       idx = Math.max(0, Math.min(shots.length - 1, i));
       const el = shots[idx];
       lbImg.src = (supportsWebp && el.dataset.srcWebp) ? el.dataset.srcWebp : el.dataset.src;
       lbImg.alt = el.dataset.cap || ('Screenshot ' + (idx+1));
       lbCap.textContent = el.dataset.cap || ('Screenshot ' + (idx+1));
+      setNavVisible(true);
       lb.classList.add('open');
       lb.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
     }
+
     function close(){
       lb.classList.remove('open');
       lb.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
       lbImg.src = '';
+      singleMode = false;
+      setNavVisible(true);
     }
-    function prev(){ openAt((idx - 1 + shots.length) % shots.length); }
-    function next(){ openAt((idx + 1) % shots.length); }
+
+    function prev(){
+      if (singleMode) return;
+      openAt((idx - 1 + shots.length) % shots.length);
+    }
+
+    function next(){
+      if (singleMode) return;
+      openAt((idx + 1) % shots.length);
+    }
 
     shots.forEach((el, i) => el.addEventListener('click', () => openAt(i)));
+    singleShots.forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSingle(el);
+      });
+    });
+
     btnClose.addEventListener('click', close);
     btnPrev.addEventListener('click', prev);
     btnNext.addEventListener('click', next);
@@ -64,8 +87,8 @@
     window.addEventListener('keydown', (e) => {
       if(!lb.classList.contains('open')) return;
       if(e.key === 'Escape') close();
-      if(e.key === 'ArrowLeft') prev();
-      if(e.key === 'ArrowRight') next();
+      if(!singleMode && e.key === 'ArrowLeft') prev();
+      if(!singleMode && e.key === 'ArrowRight') next();
     });
   })();
 </script>
