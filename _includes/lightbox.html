@@ -1,13 +1,31 @@
+<!-- Lightbox -->
+<div class="lb" id="lb" aria-hidden="true">
+    <div class="lbCard" role="dialog" aria-label="Pregled slike">
+        <div class="lbBar">
+            <div class="lbTag" id="lbCap">Screenshot</div>
+
+            <div class="lbBtns">
+                <button class="lbBtn" id="lbPrev" title="Prethodna">←</button>
+                <button class="lbBtn" id="lbNext" title="Sljedeća">→</button>
+                <button class="lbBtn" id="lbClose" title="Zatvori">✕</button>
+            </div>
+        </div>
+
+        <img class="lbImg" id="lbImg" src="" alt="" />
+    </div>
+</div>
+
 <script>
-  (function(){
+(function () {
+
     const supportsWebp = (() => {
-      try {
-        const c = document.createElement('canvas');
-        if (!c.getContext) return false;
-        return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-      } catch(e){
-        return false;
-      }
+        try {
+            const c = document.createElement('canvas');
+            if (!c.getContext) return false;
+            return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+        } catch (e) {
+            return false;
+        }
     })();
 
     const lb = document.getElementById('lb');
@@ -17,95 +35,135 @@
     const btnPrev = document.getElementById('lbPrev');
     const btnNext = document.getElementById('lbNext');
 
+    if (!lb || !lbImg || !lbCap || !btnClose || !btnPrev || !btnNext) {
+        return;
+    }
+
     let shots = [];
     let idx = 0;
     let singleMode = false;
 
-    function refreshShots(){
-      shots = Array.from(document.querySelectorAll('.shot'));
+    function refreshShots() {
+        shots = Array.from(document.querySelectorAll('.shot'));
     }
 
     function setNavVisible(visible) {
-      btnPrev.style.display = visible ? '' : 'none';
-      btnNext.style.display = visible ? '' : 'none';
+        btnPrev.style.display = visible ? '' : 'none';
+        btnNext.style.display = visible ? '' : 'none';
     }
 
-    function openImage(el, single){
-      singleMode = single;
+    function openImage(el, single) {
+        singleMode = single;
 
-      lbImg.src = (supportsWebp && el.dataset.srcWebp) ? el.dataset.srcWebp : el.dataset.src;
-      lbImg.alt = el.dataset.cap || 'Slika';
-      lbCap.textContent = el.dataset.cap || 'Slika';
+        lbImg.src =
+            (supportsWebp && el.dataset.srcWebp)
+                ? el.dataset.srcWebp
+                : el.dataset.src;
 
-      setNavVisible(!single);
+        lbImg.alt = el.dataset.cap || 'Slika';
+        lbCap.textContent = el.dataset.cap || 'Slika';
 
-      lb.classList.add('open');
-      lb.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
+        setNavVisible(!single);
+
+        lb.classList.add('open');
+        lb.setAttribute('aria-hidden', 'false');
+
+        document.body.style.overflow = 'hidden';
     }
 
-    function openAt(i){
-      refreshShots();
-      if (!shots.length) return;
-
-      idx = Math.max(0, Math.min(shots.length - 1, i));
-      openImage(shots[idx], false);
-    }
-
-    function close(){
-      lb.classList.remove('open');
-      lb.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-      lbImg.src = '';
-      singleMode = false;
-      setNavVisible(true);
-    }
-
-    function prev(){
-      if (singleMode) return;
-      refreshShots();
-      openAt((idx - 1 + shots.length) % shots.length);
-    }
-
-    function next(){
-      if (singleMode) return;
-      refreshShots();
-      openAt((idx + 1) % shots.length);
-    }
-
-    document.addEventListener('click', function(e){
-      const single = e.target.closest('.single-shot');
-      if (single) {
-        e.preventDefault();
-        e.stopPropagation();
-        openImage(single, true);
-        return;
-      }
-
-      const shot = e.target.closest('.shot');
-      if (shot) {
+    function openAt(i) {
         refreshShots();
-        const i = shots.indexOf(shot);
-        if (i >= 0) openAt(i);
-      }
+
+        if (!shots.length) return;
+
+        idx = Math.max(0, Math.min(shots.length - 1, i));
+
+        openImage(shots[idx], false);
+    }
+
+    function close() {
+        lb.classList.remove('open');
+        lb.setAttribute('aria-hidden', 'true');
+
+        document.body.style.overflow = '';
+
+        lbImg.src = '';
+
+        singleMode = false;
+
+        setNavVisible(true);
+    }
+
+    function prev() {
+        if (singleMode) return;
+
+        refreshShots();
+
+        openAt((idx - 1 + shots.length) % shots.length);
+    }
+
+    function next() {
+        if (singleMode) return;
+
+        refreshShots();
+
+        openAt((idx + 1) % shots.length);
+    }
+
+    document.addEventListener('click', function (e) {
+
+        const single = e.target.closest('.single-shot');
+
+        if (single) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            openImage(single, true);
+
+            return;
+        }
+
+        const shot = e.target.closest('.shot');
+
+        if (shot) {
+            refreshShots();
+
+            const i = shots.indexOf(shot);
+
+            if (i >= 0) {
+                openAt(i);
+            }
+        }
     });
 
     btnClose.addEventListener('click', close);
     btnPrev.addEventListener('click', prev);
     btnNext.addEventListener('click', next);
 
-    lb.addEventListener('click', function(e){
-      if (e.target === lb) close();
+    lb.addEventListener('click', function (e) {
+        if (e.target === lb) {
+            close();
+        }
     });
 
-    window.addEventListener('keydown', function(e){
-      if (!lb.classList.contains('open')) return;
+    window.addEventListener('keydown', function (e) {
 
-      if (e.key === 'Escape') close();
-      if (!singleMode && e.key === 'ArrowLeft') prev();
-      if (!singleMode && e.key === 'ArrowRight') next();
+        if (!lb.classList.contains('open')) return;
+
+        if (e.key === 'Escape') {
+            close();
+        }
+
+        if (!singleMode && e.key === 'ArrowLeft') {
+            prev();
+        }
+
+        if (!singleMode && e.key === 'ArrowRight') {
+            next();
+        }
     });
 
     refreshShots();
-  })();
+
+})();
 </script>
