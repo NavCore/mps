@@ -60,8 +60,8 @@
                 ? el.dataset.srcWebp
                 : el.dataset.src;
 
-        lbImg.alt = el.dataset.cap || 'Slika';
-        lbCap.textContent = el.dataset.cap || 'Slika';
+        lbImg.alt = el.dataset.cap || '';
+        lbCap.textContent = el.dataset.cap || '';
 
         setNavVisible(!single);
 
