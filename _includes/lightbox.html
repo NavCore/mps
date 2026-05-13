@@ -63,7 +63,11 @@
         lbImg.alt = el.dataset.cap || 'Slika';
         const cap = el.dataset.cap || '';
         lbCap.textContent = cap;
-        lbCap.style.display = cap ? '' : 'none';
+        if (cap.trim()) {
+            lbCap.style.visibility = 'visible';
+        } else {
+            lbCap.style.visibility = 'hidden';
+        }
 
         setNavVisible(!single);
 
