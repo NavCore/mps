@@ -1,112 +1,111 @@
 <script>
   (function(){
-    function initLightbox(){
-      const supportsWebp = (() => {
-        try {
-          const c = document.createElement('canvas');
-          if (!c.getContext) return false;
-          return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-        } catch(e){
-          return false;
-        }
-      })();
-
-      const shots = Array.from(document.querySelectorAll('.shot'));
-      const singleShots = Array.from(document.querySelectorAll('.single-shot'));
-      const lb = document.getElementById('lb');
-      const lbImg = document.getElementById('lbImg');
-      const lbCap = document.getElementById('lbCap');
-      const btnClose = document.getElementById('lbClose');
-      const btnPrev = document.getElementById('lbPrev');
-      const btnNext = document.getElementById('lbNext');
-
-      if (!lb || !lbImg || !lbCap || !btnClose || !btnPrev || !btnNext) return;
-
-      let idx = 0;
-      let singleMode = false;
-
-      function setNavVisible(visible) {
-        btnPrev.style.display = visible ? '' : 'none';
-        btnNext.style.display = visible ? '' : 'none';
+    const supportsWebp = (() => {
+      try {
+        const c = document.createElement('canvas');
+        if (!c.getContext) return false;
+        return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+      } catch(e){
+        return false;
       }
+    })();
 
-      function openSingle(el) {
-        singleMode = true;
-        lbImg.src = (supportsWebp && el.dataset.srcWebp) ? el.dataset.srcWebp : el.dataset.src;
-        lbImg.alt = el.dataset.cap || 'Slika';
-        lbCap.textContent = el.dataset.cap || 'Slika';
-        setNavVisible(false);
-        lb.classList.add('open');
-        lb.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-      }
+    const lb = document.getElementById('lb');
+    const lbImg = document.getElementById('lbImg');
+    const lbCap = document.getElementById('lbCap');
+    const btnClose = document.getElementById('lbClose');
+    const btnPrev = document.getElementById('lbPrev');
+    const btnNext = document.getElementById('lbNext');
 
-      function openAt(i){
-        singleMode = false;
-        idx = Math.max(0, Math.min(shots.length - 1, i));
-        const el = shots[idx];
-        if (!el) return;
+    let shots = [];
+    let idx = 0;
+    let singleMode = false;
 
-        lbImg.src = (supportsWebp && el.dataset.srcWebp) ? el.dataset.srcWebp : el.dataset.src;
-        lbImg.alt = el.dataset.cap || ('Screenshot ' + (idx + 1));
-        lbCap.textContent = el.dataset.cap || ('Screenshot ' + (idx + 1));
-        setNavVisible(true);
-        lb.classList.add('open');
-        lb.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-      }
-
-      function close(){
-        lb.classList.remove('open');
-        lb.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
-        lbImg.src = '';
-        singleMode = false;
-        setNavVisible(true);
-      }
-
-      function prev(){
-        if (singleMode || shots.length === 0) return;
-        openAt((idx - 1 + shots.length) % shots.length);
-      }
-
-      function next(){
-        if (singleMode || shots.length === 0) return;
-        openAt((idx + 1) % shots.length);
-      }
-
-      shots.forEach((el, i) => {
-        el.addEventListener('click', () => openAt(i));
-      });
-
-      singleShots.forEach((el) => {
-        el.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          openSingle(el);
-        });
-      });
-
-      btnClose.addEventListener('click', close);
-      btnPrev.addEventListener('click', prev);
-      btnNext.addEventListener('click', next);
-
-      lb.addEventListener('click', (e) => {
-        if (e.target === lb) close();
-      });
-
-      window.addEventListener('keydown', (e) => {
-        if (!lb.classList.contains('open')) return;
-        if (e.key === 'Escape') close();
-        if (!singleMode && e.key === 'ArrowLeft') prev();
-        if (!singleMode && e.key === 'ArrowRight') next();
-      });
+    function refreshShots(){
+      shots = Array.from(document.querySelectorAll('.shot'));
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initLightbox);
-    } else {
-      initLightbox();
+    function setNavVisible(visible) {
+      btnPrev.style.display = visible ? '' : 'none';
+      btnNext.style.display = visible ? '' : 'none';
     }
+
+    function openImage(el, single){
+      singleMode = single;
+
+      lbImg.src = (supportsWebp && el.dataset.srcWebp) ? el.dataset.srcWebp : el.dataset.src;
+      lbImg.alt = el.dataset.cap || 'Slika';
+      lbCap.textContent = el.dataset.cap || 'Slika';
+
+      setNavVisible(!single);
+
+      lb.classList.add('open');
+      lb.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openAt(i){
+      refreshShots();
+      if (!shots.length) return;
+
+      idx = Math.max(0, Math.min(shots.length - 1, i));
+      openImage(shots[idx], false);
+    }
+
+    function close(){
+      lb.classList.remove('open');
+      lb.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      lbImg.src = '';
+      singleMode = false;
+      setNavVisible(true);
+    }
+
+    function prev(){
+      if (singleMode) return;
+      refreshShots();
+      openAt((idx - 1 + shots.length) % shots.length);
+    }
+
+    function next(){
+      if (singleMode) return;
+      refreshShots();
+      openAt((idx + 1) % shots.length);
+    }
+
+    document.addEventListener('click', function(e){
+      const single = e.target.closest('.single-shot');
+      if (single) {
+        e.preventDefault();
+        e.stopPropagation();
+        openImage(single, true);
+        return;
+      }
+
+      const shot = e.target.closest('.shot');
+      if (shot) {
+        refreshShots();
+        const i = shots.indexOf(shot);
+        if (i >= 0) openAt(i);
+      }
+    });
+
+    btnClose.addEventListener('click', close);
+    btnPrev.addEventListener('click', prev);
+    btnNext.addEventListener('click', next);
+
+    lb.addEventListener('click', function(e){
+      if (e.target === lb) close();
+    });
+
+    window.addEventListener('keydown', function(e){
+      if (!lb.classList.contains('open')) return;
+
+      if (e.key === 'Escape') close();
+      if (!singleMode && e.key === 'ArrowLeft') prev();
+      if (!singleMode && e.key === 'ArrowRight') next();
+    });
+
+    refreshShots();
   })();
 </script>
